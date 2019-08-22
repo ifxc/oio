@@ -1,24 +1,23 @@
 # oio
-Powerful and flexible browser Http client, focusing on browser，inspired by Axios and koa-compose
-
-[中文文档](https://github.com/ifxc/oio/blob/master/docs/README-zh.md)
-
-## Features
-* Base Methods and configurations of Axios are compatible, but the node.js request module is removed
-* Middleware make business processing easier, such as transforming data for requests and responses
-* Smaller and more flexible, only 4.6kb(min + gzip)
-* Typescript and Promise support
+强大灵活的浏览器Http客户端，专注于浏览器实现，灵感来自于axios和koa-compose
 
 
-## Install
+## 特性
+* 兼容了axios的大部分方法和配置，但去掉了node.js请求模块
+* 中间件机制使业务处理更容易，比如转换请求和响应数据
+* 更小更灵活，min+gzip下只有4.6kb
+* Typescript和Promise的支持
+
+
+## 安装
 use npm:
 ```
 npm install oiojs
 ```
 
 
-## Example 
-### Simple example
+## 案例
+### 简单案例
 ```javascript
 import oiojs from 'oiojs';
 const oio = new oiojs();
@@ -31,7 +30,7 @@ oio.setUrl('/').run().then(response => {
 });
 ```
 
-### Post request
+### post请求
 ```javascript
 import oiojs from 'oiojs';
 const oio = new oiojs();
@@ -42,7 +41,7 @@ ctx.setReq({ url: '/', method: 'post', data: {}, params: {} }).run().then(respon
 // ctx.setUrl(url).setMethod('post').setData(data).setParam(params).run().then(response => console.log(response));
 ```
 
-### Use XHR alone for simple requests
+### 单独使用XHR，适合简单请求
 ```javascript
 import xhr from 'oiojs/dist/xhr.umd';
 // or typescript entry
@@ -53,7 +52,7 @@ xhr.request({ url: '/' }).then(response => console.log(response));
 // more methods: delete、head、options、post、put、patch
 ```
 
-### Use urlencoded format
+### 用urlencoded格式
 ```javascript
 import oiojs from 'oiojs';
 const oio = new oiojs();
@@ -68,12 +67,12 @@ ctx.setReq({
 }).run().then(response => console.log(response));
 ```
 
-### 🔥 Processing Business with Middleware
+### 🔥 用中间件处理业务
 **[example](https://github.com/ifxc/oio/blob/master/example/index.js)**
 
 
-### Cancel the request
-wait...!
+### 中途取消请求
+待实现
 
 
 ## Oio Api

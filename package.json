@@ -1,19 +1,39 @@
 {
-  "name": "oio",
-  "version": "0.1.0",
-  "private": true,
+  "name": "oiojs",
+  "version": "1.0.2",
+  "description": "Powerful and flexible browser Http client, focusing on browser，inspired by Axios and koa-compose",
+  "keywords": [
+    "xhr",
+    "http",
+    "ajax",
+    "XMLHttpRequest",
+    "request",
+    "promise",
+    "typescript"
+  ],
+  "author": "fxc <ifxc@qq.com>",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/ifxc/oio"
+  },
+  "bugs": {
+    "url": "https://github.com/ifxc/oio/issues"
+  },
+  "main": "dist/oiojs.umd.js",
+  "typings": "dist/typings/index.d.ts",
   "scripts": {
     "serve": "vue-cli-service serve",
-    "build": "vue-cli-service build",
+    "build": "npm run build:main && npm run build:xhr && npm run build:ts",
+    "build:main": "vue-cli-service build --no-clean --target lib --name oiojs ./src/index.ts",
+    "build:xhr": "vue-cli-service build --no-clean --target lib --name xhr ./src/adapter/xhr.ts",
+    "build:ts": "tsc -p tsconfig.type.json",
     "lint": "vue-cli-service lint",
     "test:unit": "vue-cli-service test:unit"
-  },
-  "dependencies": {
-    "vue": "^2.6.10"
   },
   "devDependencies": {
     "@types/chai": "^4.1.0",
     "@types/mocha": "^5.2.4",
+    "@types/qs": "^6.5.3",
     "@vue/cli-plugin-eslint": "^3.10.0",
     "@vue/cli-plugin-typescript": "^3.10.0",
     "@vue/cli-plugin-unit-mocha": "^3.10.0",
@@ -25,7 +45,10 @@
     "chai": "^4.1.2",
     "eslint": "^5.16.0",
     "eslint-plugin-vue": "^5.0.0",
+    "qs": "^6.8.0",
     "typescript": "^3.4.3",
-    "vue-template-compiler": "^2.6.10"
-  }
+    "vue-template-compiler": "^2.6.10",
+    "vue": "^2.6.10"
+  },
+  "license": "MIT"
 }

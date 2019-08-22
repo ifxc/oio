@@ -1,0 +1,15 @@
+{
+  "extends": "./tsconfig",
+  "compilerOptions": {
+    "module": "es2015",
+    "target": "esnext",
+    "removeComments": false,
+    "declaration": true,
+    "declarationDir": "./dist/typings",
+    "emitDeclarationOnly": true,
+    "noImplicitAny": true
+  },
+  "include": [
+    "src/index.ts"
+  ]
+}
