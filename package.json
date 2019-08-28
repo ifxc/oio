@@ -1,6 +1,6 @@
 {
   "name": "oiojs",
-  "version": "1.0.3",
+  "version": "1.0.4",
   "description": "Powerful and flexible browser Http client, focusing on browser，inspired by Axios and koa-compose",
   "keywords": [
     "xhr",
