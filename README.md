@@ -1,6 +1,12 @@
 # oio
 Powerful and flexible browser Http client, focusing on browser，inspired by Axios and koa-compose
 
+<p>
+  <a href="https://www.npmjs.com/package/oiojs"><img src="https://img.shields.io/npm/dw/oiojs" alt="Downloads"></a>
+  <a href="https://www.npmjs.com/package/oiojs"><img src="https://img.shields.io/npm/v/oiojs" alt="Version"></a>
+  <a href="https://www.npmjs.com/package/oiojs"><img src="https://img.shields.io/npm/l/oiojs" alt="License"></a>
+</p>
+
 [中文文档](https://github.com/ifxc/oio/blob/master/docs/README-zh.md)
 
 ## Features
@@ -68,8 +74,33 @@ ctx.setReq({
 }).run().then(response => console.log(response));
 ```
 
-### 🔥 Processing Business with Middleware
-**[example](https://github.com/ifxc/oio/blob/master/example/index.js)**
+### Processing Business with Middleware
+```javascript
+import oiojs from 'oiojs';
+const oio = new oiojs();
+// Add middleware
+oio.use(async function intercept(ctx, next) {
+  const { request, response } = ctx.getCtxData();
+  // handler intercept request, for example:
+  if (request && !request.data) throw new Error('No Data');
+  await next();
+  // handler intercept response, for example:
+  if (response && response.status === 500) throw new Error('Server Error');
+});
+oio.use(async function transform(ctx, next) {
+  const { request, response } = ctx.getCtxData();
+  // handler request data
+  await next();
+  // handler response data
+});
+const ctx = oio.newCtx();
+ctx.setUrl('https://easy-mock.com/mock/5d567ba461a1c429de63dbc8/api/oio').setData({}).run().then(response => {
+    console.log(response);
+  }).catch(error => {
+    console.log(error);
+});
+```
+🔥 🔥 🔥  **[example](https://github.com/ifxc/oio/blob/master/example/index.js)**
 
 
 ### Cancel the request

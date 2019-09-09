@@ -6,6 +6,8 @@
     "xhr",
     "http",
     "ajax",
+    "axios",
+    "koa-compose",
     "XMLHttpRequest",
     "request",
     "promise",
