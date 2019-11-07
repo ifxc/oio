@@ -48,7 +48,7 @@ export default function xhrAdapter (request: Request) : Promise<Response> {
       }
 
       // Prepare the response
-      const responseHeaders: AnyPlainObj | null = 'getAllResponseHeaders' in request ? parseHeaders(xhr.getAllResponseHeaders()) : null
+      const responseHeaders: AnyPlainObj | null = 'getAllResponseHeaders' in xhr ? parseHeaders(xhr.getAllResponseHeaders()) : null
       const responseData: AnyPlainObj = !request.responseType || request.responseType === 'text' ? xhr.responseText : xhr.response
 
       const response = {
