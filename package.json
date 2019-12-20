@@ -1,6 +1,6 @@
 {
   "name": "oiojs",
-  "version": "1.0.5",
+  "version": "1.0.6",
   "description": "Powerful and flexible browser Http client, focusing on browser，inspired by Axios and koa-compose",
   "keywords": [
     "xhr",
@@ -22,12 +22,12 @@
     "url": "https://github.com/ifxc/oio/issues"
   },
   "main": "dist/oiojs.umd.js",
-  "typings": "dist/typings/index.d.ts",
+  "types": "dist/typings/index.d.ts",
   "scripts": {
     "serve": "vue-cli-service serve",
     "build": "npm run build:main && npm run build:xhr && npm run build:ts",
     "build:main": "vue-cli-service build --no-clean --target lib --name oiojs ./src/index.ts",
-    "build:xhr": "vue-cli-service build --no-clean --target lib --name xhr ./src/adapter/xhr.ts",
+    "build:xhr": "vue-cli-service build --no-clean --target lib --name xhr ./src/xhr/xhr.ts",
     "build:ts": "tsc -p tsconfig.type.json",
     "lint": "vue-cli-service lint",
     "test:unit": "vue-cli-service test:unit"

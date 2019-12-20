@@ -1,4 +1,4 @@
-import { AnyPlainObj } from '../declare/type';
+import { AnyPlainObj } from '../declare/types';
 /**
  * Parse headers into an object
  *

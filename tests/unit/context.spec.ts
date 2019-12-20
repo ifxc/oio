@@ -3,7 +3,7 @@ import { expect } from 'chai';
 import Context from '@/core/context';
 import request from '@/data/request';
 import response from '@/data/response';
-import XHR from '@/adapter/xhr';
+import XHR from '@/xhr/xhr';
 
 describe('core/context', () => {
   it('Context静态方法', () => {
@@ -18,29 +18,29 @@ describe('core/context', () => {
     const context4 = new Context(
       { data: { msg: 'this a test' } },
       { lock: false },
-      { jquery: {}, ajax: XHR }
+      { jquery: {}, xhr: XHR }
       );
 
-    expect(context1.$data).to.has.deep.equal({});
+    expect(context1.getCtxData()).to.has.deep.equal({});
     expect(context1.extend).to.has.deep.equal({});
-    expect(context1.ajax).to.has.deep.equal({});
-    expect(context1.request).to.has.deep.equal(request);
-    expect(context1.response).to.has.deep.equal(response);
+    expect(context1.xhr).to.has.deep.equal(null);
+    expect(context1.getReq()).to.has.deep.equal(request);
+    expect(context1.getRes()).to.has.deep.equal(response);
 
-    expect(context2.$data).to.has.deep.equal({});
+    expect(context2.getCtxData()).to.has.deep.equal({});
     expect(context2.extend).to.has.deep.equal({});
-    expect(context2.ajax).to.has.deep.equal({});
-    expect(context2.request).to.has.deep.property('method', 'post');
+    expect(context2.xhr).to.has.deep.equal(null);
+    expect(context2.getReq()).to.has.deep.property('method', 'post');
 
-    expect(context3.$data).to.has.deep.equal({loading: { count: 0}});
+    expect(context3.getCtxData()).to.has.deep.equal({loading: { count: 0}});
     expect(context3.extend).to.has.deep.equal({});
-    expect(context3.ajax).to.has.deep.equal({});
-    expect(context3.request).to.has.deep.property('url', '/test');
+    expect(context3.xhr).to.has.deep.equal(null);
+    expect(context3.getReq()).to.has.deep.property('url', '/test');
 
-    expect(context4.$data.lock).to.has.equal(false);
+    expect(context4.getCtxData().lock).to.has.equal(false);
     expect(context4.extend.jquery).to.has.deep.equal({});
-    expect(context4.ajax).to.has.property('request');
-    expect(context4.request.data).to.has.deep.property('msg', 'this a test');
+    expect(context4.xhr).to.has.property('request');
+    expect(context4.getReq().data).to.has.deep.property('msg', 'this a test');
 
   });
 
@@ -48,15 +48,13 @@ describe('core/context', () => {
     const context = new Context();
     const ctx = context.newCtx();
 
-    expect(ctx.$data).to.has.deep.equal({});
-    expect(ctx.request).to.has.deep.equal({});
-    expect(ctx.response).to.has.deep.equal({});
-    expect(ctx.parent).to.has.equal(context);
+    expect(ctx.getCtxData()).to.has.deep.equal({});
+    expect(ctx.getRes()).to.has.deep.equal(context.getRes());
     expect(ctx.getReq()).to.has.deep.equal(request);
 
     ctx.setReq({ method: 'post', url: '/test' });
-    expect(ctx.request).to.has.deep.property('method', 'post');
-    expect(context.request).to.has.deep.property('method', 'get');
+    expect(ctx.getReq()).to.has.deep.property('method', 'post');
+    expect(context.getReq()).to.has.deep.property('method', 'get');
   });
 
   it('setCtxData/getCtxData', () => {

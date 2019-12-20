@@ -2,7 +2,7 @@
 
 import { isURLSearchParams, isUndefined, isArray, isDate, isObject } from './is'
 import { forEach } from './utils'
-import { AnyPlainObj } from '../declare/type'
+import { AnyPlainObj, ParamsSerializerCallback } from '../declare/types'
 
 function encode (val: string) : string {
   return encodeURIComponent(val)
@@ -22,7 +22,7 @@ function encode (val: string) : string {
  * @param {object} [params] The params to be appended
  * @returns {string} The formatted url
  */
-export default function buildURL (url: string, params: object, paramsSerializer?: ((params: AnyPlainObj) => string) | null) : string {
+export default function buildURL (url: string, params?: AnyPlainObj | URLSearchParams, paramsSerializer?: ParamsSerializerCallback) : string {
   if (!params) return url
 
   let serializedParams

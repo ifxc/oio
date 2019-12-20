@@ -103,29 +103,29 @@ ctx.setUrl('https://easy-mock.com/mock/5d567ba461a1c429de63dbc8/api/oio').setDat
 🔥 🔥 🔥  **[example](https://github.com/ifxc/oio/blob/master/example/index.js)**
 
 
-### Cancel the request
-wait...!
-
-
 ## Oio Api
 Oio extends from Context, But set ajax request to XHR by default
-```javascript
-class Oio extends Context {
-  constructor (request?: Request | AnyPlainObj, data?: CtxData, extend?: Extend) {
-    super(request || {}, data || {}, merge({ ajax: XHR }, extend || {}))
+```typescript
+type Extend = { xhr?: XHRRequest } & AnyPlainObj
+
+export default class OiO extends Context {
+  constructor (request?: RequestConfig, data?: CtxData, extend?: Extend) {
+    super(request || {}, data || {}, merge({ xhr: XHR }, extend || {}))
   }
 }
 ```
-```javascript
+```typescript
 export default class Context {
   // The XHR is default for ajax request
-  static XHR: XHRRequest
+  static XHR: XHRRequest | null
+  
+  static Event: Event
 
   // Define default request data config
-  protected static $Request
+  protected static $Request: RequestCOnfig
 
   // Define default response data structure
-  protected static $Response
+  protected static $Response: Response
 
   // Used to isolate from default request
   static newReq () : Request
@@ -133,44 +133,65 @@ export default class Context {
   // Used to isolate from default response
   static newRes () : Response
 
-  // Point to the context parent object
-  // If it's root, it's self
-  parent: Context
-
   // Storage context data，This context`s data is for middleware use
-  $data: CtxData
+  protected $data: CtxData
 
   // request config data
-  request: Request
+  protected request: RequestConfig
 
   // response data
-  response: Response
+  protected response: Response
 
   // The extend mainly stores references to third-party libraries
   extend: AnyPlainObj
 
   // The default is XHR for ajax request, If there is no ajax, the oio runs with an error
-  ajax: XHRRequest
+  xhr: XHRRequest
 
   // Storage middleware function
-  protected middleware: FnNext<any>[]
+  protected middleware: FnNext<Context>[]
+  
+  // Ignore middleware name list
+  protected ignoreMiddlewareFunctionNames: string[]
 
   /**
    * @param {Request} Request config
    * @param {CtxData} Context data，This context`s data is for middleware use
    * @param extend The extend mainly stores references to third-party libraries
    */
-  constructor (request?: Request | AnyPlainObj, data?: CtxData, extend?: { ajax?: XHRRequest, [prop: string]: any })
+  constructor (request?: RequestConfigj, data?: CtxData, extend?: { xhr?: XHRRequest } & AnyPlainObj)
 
   /**
+   * Create api error for unify
+   * @param {string} message The error message.
+   * @param {string} [code] The error code (for example, 'ECONNABORTED').
+   * @param {Object} [request] The request.
+   * @param {Object} [response] The response.
+   * @returns {Error} The created error.
+   */
+  createApiError (message: string, code: string = '', request: Request, response?: Response) : ApiError
+  
+  /**
+   * Add ignore middleware name
+   * @param fnNames
+   */
+  setIgnoreMiddleware (fnNames: string[]) : Context
+  
+  /**
+   * Assert whether middleware is ignored
+   * @param name
+   */
+  assertIgnoreMiddleware (name: string) : boolean
+    
+  /**
    * Add a middleware
-   * @param {FnNext<any>}
+   * @param {FnNext<Context>}
    */
   use (fn: FnNext<any>)
 
   /**
    * Run middleware
-   * @param {FnNext<any>}
+   * @param {FnNext<Context>}
    * @returns {Promise<Response>}
    */
   run (next?: FnNext<any>) : Promise<Response>
@@ -197,15 +218,15 @@ export default class Context {
 
   /**
    * Setting the request in current context and deep merged request
-   * @param {Request|AnyPlainObj} request config
+   * @param {RequestConfig} request config
    * @returns {Context}
    */
-  setReq (request: Request | AnyPlainObj) : Context
+  setReq (request: RequestConfigj) : Context
 
   /**
    * Getting the request in current context
    * The request deep merged request of the parent objects
-   * @returns {Request | null}
+   * @returns {Request}
    */
   getReq () : Request
 
@@ -218,9 +239,9 @@ export default class Context {
 
   /**
    * Getting the response in current context
-   * @returns {Response | AnyPlainObj}
+   * @returns {Response}
    */
-  getRes () : Response | AnyPlainObj
+  getRes () : Response
 
   /**
    * Setting the url in current context`s request url
@@ -238,17 +259,18 @@ export default class Context {
 
   /**
    * Setting the data in current context`s request data
-   * @param {RequestBody} string, plain object, ArrayBuffer, ArrayBufferView, URLSearchParams, FormData, File, Blob
+   * @param {RequestData} plain object, string | Document | ArrayBuffer | ArrayBufferView |
+   *        URLSearchParams | FormData | File | Blob | ReadableStream<Uint8Array> | null | undefined
    * @returns {Context}
    */
-  setData (data: RequestBody) : Context
+  setData (data: RequestData) : Context
 
   /**
    * Setting the params in current context`s request params
    * @param {AnyPlainObj} plain object for params
    * @returns {Context}
    */
-  setParams (params: AnyPlainObj) : Context
+  setParams (params: RequestParam) : Context
   /**
    * Setting the headers in current context`s request headers
    * @param {AnyPlainObj} headers object
@@ -294,7 +316,7 @@ XHR.patch(url[, data[, config]])
   
   // `params` are the URL parameters to be sent with the request
   // Must be a plain object or a URLSearchParams object
-  params: {},
+  params: null,
   
   // `paramsSerializer` is an optional function in charge of serializing `params`
   paramsSerializer: null,
@@ -326,10 +348,13 @@ XHR.patch(url[, data[, config]])
   xsrfHeaderName: 'X-XSRF-TOKEN',
   
   // `onDownloadProgress` allows handling of progress events for downloads
-  onDownloadProgress: ev => ev,
+  onDownloadProgress: null,
   
   // `onUploadProgress` allows handling of progress events for uploads
-  onUploadProgress: ev => ev
+  onUploadProgress: null
+  
+  // xhr abort, cancel is abort callback
+  cancelToken: null,
 ```
 
 
@@ -337,7 +362,7 @@ XHR.patch(url[, data[, config]])
 ```
 interface Response {
   // `data` is the response that was provided by the server
-  data: AnyObj | null,
+  data: any,
 
   // `status` is the HTTP status code from the server response
   status: number,
@@ -347,9 +372,9 @@ interface Response {
 
   // `headers` the headers that the server responded with
   // All header names are lower cased
-  headers: Header | null,
+  headers: AnyPlainObj | null,
 
-  // request config
+  // request data
   request: Request | null
 }
 ```
@@ -368,6 +393,11 @@ npm run build
 
 
 ## Changelog
+### 1.0.6 (2019.12.20)
+* Add RequestConfig cancelToken field for xhr abort
+* Add Context ignore middleware method
+* Optimize code and fix bugs
+
 ### 1.0.1 (2019.8.21)
 * Initial release
 

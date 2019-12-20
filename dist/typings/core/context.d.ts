@@ -1,47 +1,57 @@
-import { AnyPlainObj, FnNext, CtxData, RequestMethod, RequestBody } from '../declare/type';
-import { Request, Response, XHRRequest } from '../declare/interface';
+import { AnyPlainObj, FnNext, CtxData, RequestParam, RequestMethod, RequestData } from '../declare/types';
+import { RequestConfig, Request, Response, XHRRequest } from '../declare/interface';
+import Event from '../helpers/event';
+import createError from '../helpers/create-error';
 export default class Context {
     static XHR: XHRRequest | null;
+    static Event: typeof Event;
     protected static $Request: Request;
-    protected static $Response: {
-        data: null;
-        status: number;
-        statusText: string;
-        headers: {};
-        request: null;
-    };
+    protected static $Response: Response;
     static newReq(): Request;
     static newRes(): Response;
-    parent: Context;
-    $data: CtxData;
-    request: Request;
-    response: Response;
+    protected $data: CtxData;
+    protected request: RequestConfig;
+    protected response: Response;
     extend: AnyPlainObj;
-    ajax: XHRRequest;
-    protected middleware: FnNext<any>[];
+    xhr: XHRRequest | null;
+    protected middleware: FnNext<Context>[];
+    protected ignoreMiddlewareFunctionNames: string[];
     /**
      * @param {Request} Request config
      * @param {CtxData} Context data，This context`s data is for middleware use
      * @param extend The extend mainly stores references to third-party libraries
      */
-    constructor(request?: Request | AnyPlainObj, data?: CtxData, extend?: {
-        ajax?: XHRRequest;
-        [prop: string]: any;
-    });
+    constructor(request?: RequestConfig, data?: CtxData, extend?: {
+        xhr?: XHRRequest;
+    } & AnyPlainObj);
+    /**
+     * Create api error for unify
+     */
+    createApiError: typeof createError;
+    /**
+     * Add ignore middleware name
+     * @param fnNames
+     */
+    setIgnoreMiddleware(fnNames: string[]): Context;
+    /**
+     * Assert whether middleware is ignored
+     * @param name
+     */
+    assertIgnoreMiddleware(name: string): boolean;
     /**
      * Add a middleware
-     * @param {FnNext<any>}
+     * @param {FnNext<Context>}
      */
-    use(fn: FnNext<any>): void;
+    use(fn: FnNext<Context>): void;
     /**
      * Run middleware
-     * @param {FnNext<any>}
+     * @param {FnNext<Context>}
      * @returns {Promise<Response>}
      */
-    run(next?: FnNext<any>): Promise<Response>;
+    run(next?: FnNext<Context>): Promise<Response>;
     /**
      * Create a new context object for each ajax request
-     * @returns {Context} return context, but add $data、request、response、parent attribute in new context
+     * @returns {Context} return context, but add $data、request、response attribute in new context
      */
     newCtx(): Context;
     /**
@@ -61,11 +71,11 @@ export default class Context {
      * @param {Request|AnyPlainObj} request config
      * @returns {Context}
      */
-    setReq(request: Request | AnyPlainObj): Context;
+    setReq(request: RequestConfig): Context;
     /**
      * Getting the request in current context
      * The request deep merged request of the parent objects
-     * @returns {Request | null}
+     * @returns {Request}
      */
     getReq(): Request;
     /**
@@ -76,9 +86,9 @@ export default class Context {
     setRes(response: Response | AnyPlainObj): Context;
     /**
      * Getting the response in current context
-     * @returns {Response | AnyPlainObj}
+     * @returns {Response}
      */
-    getRes(): Response | AnyPlainObj;
+    getRes(): Response;
     /**
      * Setting the url in current context`s request url
      * @param {String} request url
@@ -93,16 +103,17 @@ export default class Context {
     setMethod(method: RequestMethod): Context;
     /**
      * Setting the data in current context`s request data
-     * @param {RequestBody} string, plain object, ArrayBuffer, ArrayBufferView, URLSearchParams, FormData, File, Blob
+     * @param {RequestData} plain object, string | Document | ArrayBuffer | ArrayBufferView |
+     *        URLSearchParams | FormData | File | Blob | ReadableStream<Uint8Array> | null | undefined
      * @returns {Context}
      */
-    setData(data: RequestBody): Context;
+    setData(data: RequestData): Context;
     /**
      * Setting the params in current context`s request params
-     * @param {AnyPlainObj} plain object for params
+     * @param {RequestParam}  AnyPlainObj | URLSearchParams
      * @returns {Context}
      */
-    setParams(params: AnyPlainObj): Context;
+    setParams(params: RequestParam): Context;
     /**
      * Setting the headers in current context`s request headers
      * @param {AnyPlainObj} headers object

@@ -1,44 +1,60 @@
-import { AnyPlainObj, RequestMethod, ResponseType } from './type';
-interface Request {
+import { AnyPlainObj, RequestParam, RequestMethod, ResponseType, ParamsSerializerCallback, RequestData, XhrSendBody } from './types';
+export interface RequestConfig {
+    url?: string;
+    method?: RequestMethod;
+    headers?: {
+        'Content-Type'?: string;
+        Accept?: string;
+    } & AnyPlainObj;
+    params?: RequestParam;
+    paramsSerializer?: ParamsSerializerCallback;
+    data?: RequestData;
+    timeout?: number;
+    withCredentials?: boolean;
+    auth?: {
+        username: string;
+        password: string;
+    };
+    responseType?: ResponseType;
+    xsrfCookieName?: string;
+    xsrfHeaderName?: string;
+    onDownloadProgress?: (ev: ProgressEvent) => void;
+    onUploadProgress?: (ev: ProgressEvent) => void;
+    cancelToken?: (cancel: () => void) => void;
+    [prop: string]: any;
+}
+export interface Request extends RequestConfig {
     url: string;
     method: RequestMethod;
     headers: {
-        'Content-Type'?: string;
-        Accept?: string;
-        [prop: string]: any;
-    };
-    params: AnyPlainObj;
-    paramsSerializer: ((params: AnyPlainObj) => string) | null;
-    data: string | Document | BodyInit | null | AnyPlainObj;
+        'Content-Type': string;
+        Accept: string;
+    } & AnyPlainObj;
     timeout: number;
-    withCredentials: boolean;
-    auth: {
-        username: string;
-        password: string;
-    } | null;
-    responseType: ResponseType;
-    xsrfCookieName: string;
-    xsrfHeaderName: string;
-    onDownloadProgress: (this: XMLHttpRequestEventTarget, ev: ProgressEvent) => any;
-    onUploadProgress: (this: XMLHttpRequestEventTarget, ev: ProgressEvent) => any;
-    [prop: string]: any;
+    data?: XhrSendBody;
 }
-interface Response {
-    data: AnyPlainObj | null;
+export interface Response {
+    data: any;
     status: number;
     statusText: string;
     headers: AnyPlainObj | null;
     request: Request | null;
 }
-interface XHRRequest {
-    request(request: (Request | AnyPlainObj)): Promise<Response>;
-    request(url: string, request: (Request | AnyPlainObj)): Promise<Response>;
-    'delete'(url: string, config?: Request | AnyPlainObj): Promise<Response>;
-    'get'(url: string, config?: Request | AnyPlainObj): Promise<Response>;
-    head(url: string, config?: Request | AnyPlainObj): Promise<Response>;
-    options(url: string, config?: Request | AnyPlainObj): Promise<Response>;
-    post(url: string, data: any, config?: Request | AnyPlainObj): Promise<Response>;
-    put(url: string, data: any, config?: Request | AnyPlainObj): Promise<Response>;
-    patch(url: string, data: any, config?: Request | AnyPlainObj): Promise<Response>;
+export interface XHRRequest {
+    request(request: RequestConfig): Promise<Response>;
+    request(url: string, request: RequestConfig): Promise<Response>;
+    'delete'(url: string, config?: RequestConfig): Promise<Response>;
+    'get'(url: string, config?: RequestConfig): Promise<Response>;
+    head(url: string, config?: RequestConfig): Promise<Response>;
+    options(url: string, config?: RequestConfig): Promise<Response>;
+    post(url: string, data: any, config?: RequestConfig): Promise<Response>;
+    put(url: string, data: any, config?: RequestConfig): Promise<Response>;
+    patch(url: string, data: any, config?: RequestConfig): Promise<Response>;
 }
-export { Request, Response, XHRRequest };
+export interface ApiError extends Error {
+    code: string;
+    request?: Request;
+    response?: Response;
+    isApiError: boolean;
+    toJSON?: Function;
+}

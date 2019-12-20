@@ -1,4 +1,4 @@
-import { AnyPlainObj } from '../declare/type';
+import { AnyPlainObj } from '../declare/types';
 /**
  * Trim excess whitespace off the beginning and end of a string
  *
@@ -36,7 +36,7 @@ export declare function forEach(obj: any, fn: Function): void;
  * @param {Object} obj1 Object to merge
  * @returns {Object} Result of all merge properties
  */
-export declare function merge(...args: object[]): AnyPlainObj;
+export declare function merge(...args: AnyPlainObj[]): AnyPlainObj;
 /**
  * Function equal to merge with the difference being that no reference
  * to original objects is kept.
@@ -45,4 +45,4 @@ export declare function merge(...args: object[]): AnyPlainObj;
  * @param {Object} obj1 Object to merge
  * @returns {Object} Result of all merge properties
  */
-export declare function deepMerge(...args: object[]): AnyPlainObj;
+export declare function deepMerge(...args: AnyPlainObj[]): AnyPlainObj;

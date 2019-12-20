@@ -1,16 +1,6 @@
 
 import { isStandardBrowserEnv, isString } from './is'
-
-type OriginURL<T> = {
-  href: T,
-  protocol: T,
-  host: T,
-  search: T,
-  hash: T,
-  hostname: T,
-  port: T,
-  pathname: T
-}
+import { Location } from '../declare/types'
 
 export default (
   isStandardBrowserEnv()
@@ -19,7 +9,7 @@ export default (
     ? (function standardBrowserEnv () {
       const msie = /(msie|trident)/i.test(navigator.userAgent)
       const urlParsingNode = document.createElement('a')
-      let originURL: OriginURL<string>
+      let originURL: Location
 
       /**
       * Parse a URL to discover it's components
@@ -27,7 +17,7 @@ export default (
       * @param {String} url The URL to be parsed
       * @returns {Object}
       */
-      function resolveURL (url: string) {
+      function resolveURL (url: string) : Location {
         let href = url
 
         if (msie) {
@@ -61,10 +51,9 @@ export default (
       * @param {String} requestURL The URL to test
       * @returns {boolean} True if URL shares the same origin, otherwise false
       */
-      return function isURLSameOrigin (requestURL: string | OriginURL<string>) : boolean {
-        const parsed = (isString(requestURL)) ? resolveURL(<string>requestURL) : requestURL
-        return ((<OriginURL<string>>parsed).protocol === originURL.protocol &&
-          (<OriginURL<string>>parsed).host === originURL.host)
+      return function isURLSameOrigin (requestURL: string | Location) : boolean {
+        const parsed: Location = isString(requestURL) ? resolveURL(<string>requestURL) : <Location>requestURL
+        return parsed.protocol === originURL.protocol && parsed.host === originURL.host
       }
     })()
 

@@ -1,5 +1,6 @@
 
-import { AnyPlainObj } from '../declare/type'
+import { AnyPlainObj, EventCallback } from '../declare/types'
+import { isFunction } from './is'
 
 export default class Event {
   static EventMap: AnyPlainObj = {}
@@ -10,14 +11,14 @@ export default class Event {
   emit (name: string, ...args: any[]) {
     const key = this.scope + name
     if (Event.EventMap[key]) {
-      Event.EventMap[key].forEach((event: (...args: any[]) => void) => {
-        event.apply(this, args)
+      Event.EventMap[key].forEach((callback: EventCallback) => {
+        callback.apply(this, args)
       })
     }
   }
-  on (name: string, callback: (...args: any) => void) {
+  on (name: string, callback: EventCallback) {
     const key = this.scope + name
-    if (typeof callback === 'function') {
+    if (isFunction(callback)) {
       if (!Event.EventMap[key]) Event.EventMap[key] = []
       Event.EventMap[key].push(callback)
     }

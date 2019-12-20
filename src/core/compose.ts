@@ -1,5 +1,5 @@
-import { FnNext } from '../declare/type'
-import Service from './context'
+import { FnNext } from '../declare/types'
+import Context from './context'
 /**
  * Compose `middleware` returning
  * a fully valid middleware comprised
@@ -10,7 +10,7 @@ import Service from './context'
  * @api public
  */
 
-export default function compose (middleware: ((ctx: Service, ...arg: any[]) => any)[]) {
+export default function compose (middleware: FnNext<Context>[]) {
   if (!Array.isArray(middleware)) throw new TypeError('Middleware stack must be an array!')
   for (const fn of middleware) {
     if (typeof fn !== 'function') throw new TypeError('Middleware must be composed of functions!')
@@ -22,14 +22,14 @@ export default function compose (middleware: ((ctx: Service, ...arg: any[]) => a
    * @api public
    */
 
-  return function (context: Service, next?: FnNext<any>) {
+  return function (context: Context, next?: FnNext<Context>) {
     // last called middleware #
     let index = -1
     return dispatch(0)
     function dispatch (i: number) : Promise<any> {
       if (i <= index) return Promise.reject(new Error('next() called multiple times'))
       index = i
-      let fn: (FnNext<any> | void) = middleware[i]
+      let fn: (FnNext<Context> | void) = middleware[i]
       if (i === middleware.length) fn = next
       if (!fn) return Promise.resolve()
       try {

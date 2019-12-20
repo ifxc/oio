@@ -8,7 +8,7 @@ export default (
     ? (function standardBrowserEnv () {
       return {
         write: function write (name: string, value: string, expires: number,
-          path?: string, domain?: string, secure?: boolean) {
+          path?: string, domain?: string, secure?: boolean) : void {
           // start
           const cookie: string[] = []
           cookie.push(name + '=' + encodeURIComponent(value))
@@ -32,12 +32,12 @@ export default (
           document.cookie = cookie.join('; ')
         },
 
-        read: function read (name: string) {
+        read: function read (name: string) : string | null {
           const match = document.cookie.match(new RegExp('(^|;\\s*)(' + name + ')=([^;]*)'))
           return (match ? decodeURIComponent(match[3]) : null)
         },
 
-        remove: function remove (name: string) {
+        remove: function remove (name: string) : void {
           this.write(name, '', Date.now() - 86400000)
         }
       }

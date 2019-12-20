@@ -1,9 +1,9 @@
 
-import { AnyPlainObj } from '../declare/type'
+import { AnyPlainObj } from '../declare/types'
 import { Request, Response } from '../declare/interface'
 
 import createError from '../helpers/create-error'
-import { isFormData, isStandardBrowserEnv, isUndefined } from '../helpers/is'
+import { isFormData, isStandardBrowserEnv, isUndefined, isFunction } from '../helpers/is'
 import { forEach } from '../helpers/utils'
 import buildURL from '../helpers/build-url'
 import parseHeaders from '../helpers/parse-headers'
@@ -51,7 +51,7 @@ export default function xhrAdapter (request: Request) : Promise<Response> {
       const responseHeaders: AnyPlainObj | null = 'getAllResponseHeaders' in xhr ? parseHeaders(xhr.getAllResponseHeaders()) : null
       const responseData: AnyPlainObj = !request.responseType || request.responseType === 'text' ? xhr.responseText : xhr.response
 
-      const response = {
+      const response: Response = {
         data: responseData,
         status: xhr.status,
         statusText: xhr.statusText,
@@ -65,11 +65,23 @@ export default function xhrAdapter (request: Request) : Promise<Response> {
       xhr = null
     }
 
+    // Handle browser request cancellation (as opposed to a manual cancellation)
+    xhr.onabort = function handleAbort () {
+      if (!xhr) {
+        return
+      }
+
+      reject(createError('Request aborted', 'XHR_ABORTED', request))
+
+      // Clean up request
+      xhr = null
+    }
+
     // Handle low level network errors
     xhr.onerror = function handleError () {
       // Real errors are hidden from us by the browser
       // onerror should only fire if it's a network error
-      reject(createError('Network Error', request, null))
+      reject(createError('XMLHttpRequest error', 'XHR_ERROR', request))
 
       // Clean up request
       xhr = null
@@ -77,7 +89,7 @@ export default function xhrAdapter (request: Request) : Promise<Response> {
 
     // Handle timeout
     xhr.ontimeout = function handleTimeout () {
-      reject(createError('timeout of ' + request.timeout + 'ms exceeded', request, 'ECONNABORTED'))
+      reject(createError('timeout of ' + request.timeout + 'ms exceeded', 'ECONNABORTED', request))
 
       // Clean up request
       xhr = null
@@ -91,11 +103,10 @@ export default function xhrAdapter (request: Request) : Promise<Response> {
     // Specifically not if we're in a web worker, or react-native.
     if (isStandardBrowserEnv()) {
       // Add xsrf header
-      const xsrfValue = (request.withCredentials || isURLSameOrigin(request.url)) && request.xsrfCookieName
-        ? cookies.read(request.xsrfCookieName)
-        : undefined
+      const isAddXsrfHeader = request.withCredentials || isURLSameOrigin(request.url)
+      const xsrfValue = isAddXsrfHeader && request.xsrfCookieName ? cookies.read(request.xsrfCookieName) : undefined
 
-      if (xsrfValue) {
+      if (xsrfValue && request.xsrfHeaderName) {
         requestHeaders[request.xsrfHeaderName] = xsrfValue
       }
     }
@@ -121,7 +132,7 @@ export default function xhrAdapter (request: Request) : Promise<Response> {
     // Add responseType to request if needed
     if (request.responseType) {
       try {
-        xhr.responseType = <XMLHttpRequestResponseType>request.responseType
+        xhr.responseType = request.responseType
       } catch (e) {
         // Expected DOMException thrown by browsers not compatible XMLHttpRequest Level 2.
         // But, this can be suppressed for 'json' type as it can be parsed by default 'transformResponse' function.
@@ -132,13 +143,23 @@ export default function xhrAdapter (request: Request) : Promise<Response> {
     }
 
     // Handle progress if needed
-    if (typeof request.onDownloadProgress === 'function') {
+    if (isFunction(request.onDownloadProgress) && request.onDownloadProgress) {
       xhr.addEventListener('progress', request.onDownloadProgress)
     }
 
     // Not all browsers support upload events
-    if (typeof request.onUploadProgress === 'function' && xhr.upload) {
+    if (isFunction(request.onUploadProgress) && xhr.upload && request.onUploadProgress) {
       xhr.upload.addEventListener('progress', request.onUploadProgress)
+    }
+
+    if (request.cancelToken) {
+      // Handle cancellation
+      request.cancelToken(function onCanceled () {
+        if (!xhr) return
+        xhr.abort()
+        // Clean up request
+        xhr = null
+      })
     }
 
     if (requestData === undefined) {
@@ -146,7 +167,6 @@ export default function xhrAdapter (request: Request) : Promise<Response> {
     }
 
     // Send the request
-    // @ts-ignore
     xhr.send(requestData)
   })
 }

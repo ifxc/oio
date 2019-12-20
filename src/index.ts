@@ -1,16 +1,14 @@
 
-import { AnyPlainObj, CtxData } from './declare/type'
-import { Request, XHRRequest } from './declare/interface'
+import { AnyPlainObj, CtxData } from './declare/types'
+import { RequestConfig, XHRRequest } from './declare/interface'
 import { merge } from './helpers/utils'
-import XHR from './adapter/xhr'
+import XHR from './xhr/xhr'
 import Context from './core/context'
 
-type Extend = { ajax?: XHRRequest, [prop: string]: any }
+type Extend = { xhr?: XHRRequest } & AnyPlainObj
 
-class OiO extends Context {
-  constructor (request?: Request | AnyPlainObj, data?: CtxData, extend?: Extend) {
-    super(request || {}, data || {}, merge({ ajax: XHR }, extend || {}))
+export default class OiO extends Context {
+  constructor (request?: RequestConfig, data?: CtxData, extend?: Extend) {
+    super(request || {}, data || {}, merge({ xhr: XHR }, extend || {}))
   }
 }
-
-export default OiO

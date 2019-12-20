@@ -1,6 +1,6 @@
 'use strict'
 
-import { AnyPlainObj } from '../declare/type'
+import { AnyPlainObj } from '../declare/types'
 import { forEach, trim } from './utils'
 
 // Headers whose duplicates are ignored by node
@@ -36,15 +36,14 @@ export default function parseHeaders (headers: string) : AnyPlainObj {
     key = trim(line.substr(0, i)).toLowerCase()
     val = trim(line.substr(i + 1))
 
-    if (key) {
-      if (parsed[key] && ignoreDuplicateOf.indexOf(key) >= 0) {
-        return
-      }
-      if (key === 'set-cookie') {
-        parsed[key] = (parsed[key] ? parsed[key] : []).concat([val])
-      } else {
-        parsed[key] = parsed[key] ? parsed[key] + ', ' + val : val
-      }
+    if (!key) return
+    if (parsed[key] && ignoreDuplicateOf.indexOf(key) >= 0) {
+      return
+    }
+    if (key === 'set-cookie') {
+      parsed[key] = (parsed[key] ? parsed[key] : []).concat([val])
+    } else {
+      parsed[key] = parsed[key] ? parsed[key] + ', ' + val : val
     }
   })
 

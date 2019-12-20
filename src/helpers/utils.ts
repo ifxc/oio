@@ -1,5 +1,5 @@
 
-import { AnyPlainObj } from '../declare/type'
+import { AnyPlainObj } from '../declare/types'
 import { isArray, isUndefined, isObject, isPlainObject } from './is'
 
 /**
@@ -67,17 +67,17 @@ export function forEach (obj: any, fn: Function) : void {
  * @param {Object} obj1 Object to merge
  * @returns {Object} Result of all merge properties
  */
-export function merge (...args: object[]) : AnyPlainObj {
+export function merge (...args: AnyPlainObj[]) : AnyPlainObj {
   const result: AnyPlainObj = {}
   function assignValue (val: any, key: string) {
-    if (isObject(result[key]) && isObject(val)) {
+    if (isObject(result[key]) && isPlainObject(val)) {
       result[key] = merge(result[key], val)
     } else {
       result[key] = val
     }
   }
 
-  for (let i = 0, l = arguments.length; i < l; i++) {
+  for (let i = 0, l = args.length; i < l; i++) {
     forEach(arguments[i], assignValue)
   }
   return result
@@ -91,7 +91,7 @@ export function merge (...args: object[]) : AnyPlainObj {
  * @param {Object} obj1 Object to merge
  * @returns {Object} Result of all merge properties
  */
-export function deepMerge (...args: object[]) : AnyPlainObj {
+export function deepMerge (...args: AnyPlainObj[]) : AnyPlainObj {
   const result: AnyPlainObj = {}
 
   function assignValue (val: any, key: string) {
@@ -104,7 +104,7 @@ export function deepMerge (...args: object[]) : AnyPlainObj {
     }
   }
 
-  for (let i = 0, l = arguments.length; i < l; i++) {
+  for (let i = 0, l = args.length; i < l; i++) {
     forEach(arguments[i], assignValue)
   }
   return result

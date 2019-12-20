@@ -592,14 +592,14 @@ function merge() {
     }
     var result = {};
     function assignValue(val, key) {
-        if (isObject(result[key]) && isObject(val)) {
+        if (isObject(result[key]) && isPlainObject(val)) {
             result[key] = merge(result[key], val);
         }
         else {
             result[key] = val;
         }
     }
-    for (var i = 0, l = arguments.length; i < l; i++) {
+    for (var i = 0, l = args.length; i < l; i++) {
         forEach(arguments[i], assignValue);
     }
     return result;
@@ -629,7 +629,7 @@ function deepMerge() {
             result[key] = val;
         }
     }
-    for (var i = 0, l = arguments.length; i < l; i++) {
+    for (var i = 0, l = args.length; i < l; i++) {
         forEach(arguments[i], assignValue);
     }
     return result;
@@ -640,25 +640,21 @@ function deepMerge() {
  * Update an Error with the specified config, error code, and response.
  *
  * @param {Error} error The error to update.
- * @param {Object} config The config.
  * @param {string} [code] The error code (for example, 'ECONNABORTED').
  * @param {Object} [request] The request.
  * @param {Object} [response] The response.
  * @returns {Error} The error.
  */
-function enhanceError(error, request, code, response) {
-    if (code) {
-        error.code = code;
-    }
+function enhanceError(error, code, request, response) {
+    error.code = code;
     error.request = request;
     error.response = response;
-    error.isAxiosError = true;
     error.toJSON = function () {
         var ctx = this;
         return {
             // Standard
-            message: this.message,
-            name: this.name,
+            message: ctx.message,
+            name: ctx.name,
             // Microsoft
             description: ctx.description,
             number: ctx.number,
@@ -666,7 +662,7 @@ function enhanceError(error, request, code, response) {
             fileName: ctx.fileName,
             lineNumber: ctx.lineNumber,
             columnNumber: ctx.columnNumber,
-            stack: this.stack,
+            stack: ctx.stack,
             // Instance
             request: ctx.request,
             code: ctx.code
@@ -678,15 +674,15 @@ function enhanceError(error, request, code, response) {
  * Create an Error with the specified message, config, error code, request and response.
  *
  * @param {string} message The error message.
- * @param {Object} config The config.
  * @param {string} [code] The error code (for example, 'ECONNABORTED').
  * @param {Object} [request] The request.
  * @param {Object} [response] The response.
  * @returns {Error} The created error.
  */
-function createError(message, request, code, response) {
+function createError(message, code, request, response) {
+    if (code === void 0) { code = ''; }
     var error = new Error(message);
-    return enhanceError(error, request, code, response);
+    return enhanceError(error, code, request, response);
 }
 
 // CONCATENATED MODULE: ./src/helpers/build-url.ts
@@ -787,16 +783,16 @@ function parseHeaders(headers) {
         i = line.indexOf(':');
         key = trim(line.substr(0, i)).toLowerCase();
         val = trim(line.substr(i + 1));
-        if (key) {
-            if (parsed[key] && ignoreDuplicateOf.indexOf(key) >= 0) {
-                return;
-            }
-            if (key === 'set-cookie') {
-                parsed[key] = (parsed[key] ? parsed[key] : []).concat([val]);
-            }
-            else {
-                parsed[key] = parsed[key] ? parsed[key] + ', ' + val : val;
-            }
+        if (!key)
+            return;
+        if (parsed[key] && ignoreDuplicateOf.indexOf(key) >= 0) {
+            return;
+        }
+        if (key === 'set-cookie') {
+            parsed[key] = (parsed[key] ? parsed[key] : []).concat([val]);
+        }
+        else {
+            parsed[key] = parsed[key] ? parsed[key] + ', ' + val : val;
         }
     });
     return parsed;
@@ -847,9 +843,8 @@ function parseHeaders(headers) {
         * @returns {boolean} True if URL shares the same origin, otherwise false
         */
         return function isURLSameOrigin(requestURL) {
-            var parsed = (isString(requestURL)) ? resolveURL(requestURL) : requestURL;
-            return (parsed.protocol === originURL.protocol &&
-                parsed.host === originURL.host);
+            var parsed = isString(requestURL) ? resolveURL(requestURL) : requestURL;
+            return parsed.protocol === originURL.protocol && parsed.host === originURL.host;
         };
     })()
     // Non standard browser envs (web workers, react-native) lack needed support.
@@ -902,7 +897,7 @@ function parseHeaders(headers) {
         };
     })());
 
-// CONCATENATED MODULE: ./src/adapter/xhrAdapter.ts
+// CONCATENATED MODULE: ./src/xhr/xhrAdapter.ts
 
 
 
@@ -942,7 +937,7 @@ function xhrAdapter(request) {
                 return;
             }
             // Prepare the response
-            var responseHeaders = 'getAllResponseHeaders' in request ? parseHeaders(xhr.getAllResponseHeaders()) : null;
+            var responseHeaders = 'getAllResponseHeaders' in xhr ? parseHeaders(xhr.getAllResponseHeaders()) : null;
             var responseData = !request.responseType || request.responseType === 'text' ? xhr.responseText : xhr.response;
             var response = {
                 data: responseData,
@@ -955,17 +950,26 @@ function xhrAdapter(request) {
             // Clean up request
             xhr = null;
         };
+        // Handle browser request cancellation (as opposed to a manual cancellation)
+        xhr.onabort = function handleAbort() {
+            if (!xhr) {
+                return;
+            }
+            reject(createError('Request aborted', 'XHR_ABORTED', request));
+            // Clean up request
+            xhr = null;
+        };
         // Handle low level network errors
         xhr.onerror = function handleError() {
             // Real errors are hidden from us by the browser
             // onerror should only fire if it's a network error
-            reject(createError('Network Error', request, null));
+            reject(createError('XMLHttpRequest error', 'XHR_ERROR', request));
             // Clean up request
             xhr = null;
         };
         // Handle timeout
         xhr.ontimeout = function handleTimeout() {
-            reject(createError('timeout of ' + request.timeout + 'ms exceeded', request, 'ECONNABORTED'));
+            reject(createError('timeout of ' + request.timeout + 'ms exceeded', 'ECONNABORTED', request));
             // Clean up request
             xhr = null;
         };
@@ -976,10 +980,9 @@ function xhrAdapter(request) {
         // Specifically not if we're in a web worker, or react-native.
         if (isStandardBrowserEnv()) {
             // Add xsrf header
-            var xsrfValue = (request.withCredentials || is_url_same_origin(request.url)) && request.xsrfCookieName
-                ? cookies.read(request.xsrfCookieName)
-                : undefined;
-            if (xsrfValue) {
+            var isAddXsrfHeader = request.withCredentials || is_url_same_origin(request.url);
+            var xsrfValue = isAddXsrfHeader && request.xsrfCookieName ? cookies.read(request.xsrfCookieName) : undefined;
+            if (xsrfValue && request.xsrfHeaderName) {
                 requestHeaders[request.xsrfHeaderName] = xsrfValue;
             }
         }
@@ -1014,23 +1017,99 @@ function xhrAdapter(request) {
             }
         }
         // Handle progress if needed
-        if (typeof request.onDownloadProgress === 'function') {
+        if (isFunction(request.onDownloadProgress) && request.onDownloadProgress) {
             xhr.addEventListener('progress', request.onDownloadProgress);
         }
         // Not all browsers support upload events
-        if (typeof request.onUploadProgress === 'function' && xhr.upload) {
+        if (isFunction(request.onUploadProgress) && xhr.upload && request.onUploadProgress) {
             xhr.upload.addEventListener('progress', request.onUploadProgress);
+        }
+        if (request.cancelToken) {
+            // Handle cancellation
+            request.cancelToken(function onCanceled() {
+                if (!xhr)
+                    return;
+                xhr.abort();
+                // Clean up request
+                xhr = null;
+            });
         }
         if (requestData === undefined) {
             requestData = null;
         }
         // Send the request
-        // @ts-ignore
         xhr.send(requestData);
     });
 }
 
-// CONCATENATED MODULE: ./src/declare/enum.ts
+// CONCATENATED MODULE: ./src/data/request.ts
+var request_request = {
+    url: '',
+    method: 'get',
+    headers: {
+        'Content-Type': '',
+        'Accept': 'application/json, text/plain, */*'
+    },
+    timeout: 0,
+    withCredentials: false,
+    responseType: 'json',
+    xsrfCookieName: 'XSRF-TOKEN',
+    xsrfHeaderName: 'X-XSRF-TOKEN'
+};
+/* harmony default export */ var data_request = (request_request);
+
+// CONCATENATED MODULE: ./src/xhr/xhr.ts
+
+
+
+
+/**
+ * create request method
+ */
+var XHR = {
+    request: function (requestConfig) {
+        if (isString(requestConfig)) {
+            requestConfig = arguments[1] || {};
+            requestConfig.url = arguments[0];
+        }
+        else {
+            requestConfig = requestConfig || {};
+        }
+        var request = merge(data_request, requestConfig);
+        if (!request.headers)
+            request.headers = {};
+        var isJsonData = !(isFormData(request.data) || isArrayBuffer(request.data) ||
+            isStream(request.data) || isFile(request.data) || isBlob(request.data));
+        if (isArrayBufferView(request.data)) {
+            request.data = request.buffer;
+        }
+        // default form set
+        if (isURLSearchParams(request.data)) {
+            if (!request.headers['Content-Type']) {
+                request.headers['Content-Type'] = 'application/x-www-form-urlencoded;charset=utf-8';
+            }
+            if (request.data)
+                request.data = request.data.toString();
+        }
+        // default json set
+        if (isJsonData && isObject(request.data)) {
+            if (!request.headers['Content-Type']) {
+                request.headers['Content-Type'] = 'application/json;charset=utf-8';
+            }
+            request.data = JSON.stringify(request.data);
+        }
+        return xhrAdapter(request).then(function (response) {
+            // default parse json
+            if (isString(response.data)) {
+                try {
+                    response.data = JSON.parse(response.data);
+                }
+                catch (e) { /* Ignore */ }
+            }
+            return response;
+        });
+    }
+};
 var RequestMethodNoData;
 (function (RequestMethodNoData) {
     RequestMethodNoData["Delete"] = "delete";
@@ -1044,95 +1123,12 @@ var RequestMethodWithData;
     RequestMethodWithData["Put"] = "put";
     RequestMethodWithData["Patch"] = "patch";
 })(RequestMethodWithData || (RequestMethodWithData = {}));
-var RequestMethod;
-(function (RequestMethod) {
-    RequestMethod["Delete"] = "delete";
-    RequestMethod["Get"] = "get";
-    RequestMethod["Head"] = "head";
-    RequestMethod["Options"] = "options";
-    RequestMethod["Post"] = "post";
-    RequestMethod["Put"] = "put";
-    RequestMethod["Patch"] = "patch";
-})(RequestMethod || (RequestMethod = {}));
-var ResponseType;
-(function (ResponseType) {
-    ResponseType["Arraybuffer"] = "arraybuffer";
-    ResponseType["Document"] = "document";
-    ResponseType["Json"] = "json";
-    ResponseType["Text"] = "text";
-    ResponseType["Stream"] = "stream";
-    ResponseType["Blob"] = "Blob";
-})(ResponseType || (ResponseType = {}));
-
-
-// CONCATENATED MODULE: ./src/data/request.ts
-
-var request_request = {
-    url: '',
-    method: RequestMethod.Get,
-    headers: {
-        'Content-Type': '',
-        'Accept': 'application/json, text/plain, */*'
-    },
-    params: {},
-    paramsSerializer: null,
-    data: null,
-    timeout: 0,
-    withCredentials: false,
-    auth: null,
-    responseType: ResponseType.Json,
-    xsrfCookieName: 'XSRF-TOKEN',
-    xsrfHeaderName: 'X-XSRF-TOKEN',
-    onDownloadProgress: function (ev) { return ev; },
-    onUploadProgress: function (ev) { return ev; }
-};
-/* harmony default export */ var data_request = (request_request);
-
-// CONCATENATED MODULE: ./src/adapter/xhr.ts
-
-
-
-
-var XHR = {
-    request: function (request) {
-        if (typeof request === 'string') {
-            request = arguments[1] || {};
-            request.url = arguments[0];
-        }
-        else {
-            request = request || {};
-        }
-        request = merge(data_request, request);
-        var isPass = isFormData(request.data) || isArrayBuffer(request.data) ||
-            isStream(request.data) || isFile(request.data) || isBlob(request.data);
-        if (isArrayBufferView(request.data)) {
-            request.data = request.buffer;
-        }
-        if (isURLSearchParams(request.data)) {
-            if (!request.headers['Content-Type']) {
-                request.headers['Content-Type'] = 'application/x-www-form-urlencoded;charset=utf-8';
-            }
-            request.data = request.data.toString();
-        }
-        if (!isPass && isObject(request.data)) {
-            if (!request.headers['Content-Type']) {
-                request.headers['Content-Type'] = 'application/json;charset=utf-8';
-            }
-            request.data = JSON.stringify(request.data);
-        }
-        return xhrAdapter(request).then(function (response) {
-            // default json
-            if (typeof response.data === 'string') {
-                try {
-                    response.data = JSON.parse(response.data);
-                }
-                catch (e) { /* Ignore */ }
-            }
-            return response;
-        });
-    }
-};
-forEach(['delete', 'get', 'head', 'options'], function forEachMethodNoData(method) {
+forEach([
+    RequestMethodNoData.Delete,
+    RequestMethodNoData.Get,
+    RequestMethodNoData.Head,
+    RequestMethodNoData.Options
+], function forEachMethodNoData(method) {
     XHR[method] = function (url, config) {
         return this.request(merge(config || {}, {
             method: method,
@@ -1140,8 +1136,13 @@ forEach(['delete', 'get', 'head', 'options'], function forEachMethodNoData(metho
         }));
     };
 });
-forEach(['post', 'put', 'patch'], function forEachMethodWithData(method) {
+forEach([
+    RequestMethodWithData.Post,
+    RequestMethodWithData.Put,
+    RequestMethodWithData.Patch
+], function forEachMethodWithData(method) {
     XHR[method] = function (url, data, config) {
+        if (data === void 0) { data = {}; }
         return this.request(merge(config || {}, {
             method: method,
             url: url,
@@ -1149,16 +1150,17 @@ forEach(['post', 'put', 'patch'], function forEachMethodWithData(method) {
         }));
     };
 });
-/* harmony default export */ var adapter_xhr = (XHR);
+/* harmony default export */ var xhr_xhr = (XHR);
 
 // CONCATENATED MODULE: ./src/data/response.ts
-/* harmony default export */ var data_response = ({
+var response_response = {
     data: null,
     status: 0,
     statusText: '',
     headers: {},
     request: null
-});
+};
+/* harmony default export */ var data_response = (response_response);
 
 // CONCATENATED MODULE: ./src/core/compose.ts
 /**
@@ -1206,7 +1208,45 @@ function compose(middleware) {
     };
 }
 
+// CONCATENATED MODULE: ./src/helpers/event.ts
+
+var event_Event = /** @class */ (function () {
+    function Event(scope) {
+        if (scope === void 0) { scope = ''; }
+        this.scope = '';
+        this.scope = scope ? scope + ':' : '';
+    }
+    Event.prototype.emit = function (name) {
+        var _this = this;
+        var args = [];
+        for (var _i = 1; _i < arguments.length; _i++) {
+            args[_i - 1] = arguments[_i];
+        }
+        var key = this.scope + name;
+        if (Event.EventMap[key]) {
+            Event.EventMap[key].forEach(function (callback) {
+                callback.apply(_this, args);
+            });
+        }
+    };
+    Event.prototype.on = function (name, callback) {
+        var key = this.scope + name;
+        if (isFunction(callback)) {
+            if (!Event.EventMap[key])
+                Event.EventMap[key] = [];
+            Event.EventMap[key].push(callback);
+        }
+    };
+    Event.prototype.off = function (name) {
+        delete Event.EventMap[this.scope + name];
+    };
+    Event.EventMap = {};
+    return Event;
+}());
+/* harmony default export */ var helpers_event = (event_Event);
+
 // CONCATENATED MODULE: ./src/core/context.ts
+
 
 
 
@@ -1219,27 +1259,30 @@ var context_Context = /** @class */ (function () {
      * @param extend The extend mainly stores references to third-party libraries
      */
     function Context(request, data, extend) {
+        if (data === void 0) { data = {}; }
         // Storage context data，This context`s data is for middleware use
         this.$data = {};
         // The extend mainly stores references to third-party libraries
         this.extend = {};
+        // The default is XHR for ajax request, If there is no ajax, the oio runs with an error
+        this.xhr = null;
         // Storage middleware function
         this.middleware = [];
-        if (data) {
-            this.$data = merge(this.$data, data);
-        }
+        // Ignore middleware name list
+        this.ignoreMiddlewareFunctionNames = [];
+        /**
+         * Create api error for unify
+         */
+        this.createApiError = createError;
+        this.$data = merge(this.$data, data);
         if (extend) {
             this.extend = extend;
-        }
-        if (this.extend.ajax) {
-            Context.XHR = this.ajax = this.extend.ajax;
-        }
-        else {
-            Context.XHR = this.ajax = {};
+            if (extend.xhr) {
+                Context.XHR = this.xhr = extend.xhr;
+            }
         }
         this.request = deepMerge(Context.newReq(), request || {});
         this.response = Context.newRes();
-        this.parent = this;
     }
     // Used to isolate from default request
     Context.newReq = function () {
@@ -1250,41 +1293,58 @@ var context_Context = /** @class */ (function () {
         return deepMerge({}, Context.$Response);
     };
     /**
+     * Add ignore middleware name
+     * @param fnNames
+     */
+    Context.prototype.setIgnoreMiddleware = function (fnNames) {
+        this.ignoreMiddlewareFunctionNames = fnNames;
+        return this;
+    };
+    /**
+     * Assert whether middleware is ignored
+     * @param name
+     */
+    Context.prototype.assertIgnoreMiddleware = function (name) {
+        return this.ignoreMiddlewareFunctionNames.indexOf(name) > -1;
+    };
+    /**
      * Add a middleware
-     * @param {FnNext<any>}
+     * @param {FnNext<Context>}
      */
     Context.prototype.use = function (fn) {
         this.middleware.push(fn);
     };
     /**
      * Run middleware
-     * @param {FnNext<any>}
+     * @param {FnNext<Context>}
      * @returns {Promise<Response>}
      */
     Context.prototype.run = function (next) {
+        var _this = this;
+        var middleware = this.middleware.filter(function (fn) { return !_this.assertIgnoreMiddleware(fn.name); });
         var fn = compose([
-            function getResponse(ctx, next) {
+            function getResponseMiddleware(ctx, next) {
                 return next().then(function () { return ctx.getRes(); });
             }
-        ].concat(this.middleware));
-        return fn(this, next || function request(ctx, next) {
-            if (ctx.ajax && ctx.ajax.request) {
-                return ctx.ajax.request(ctx.getReq() || {})
+        ].concat(middleware));
+        return fn(this, next || function requestMiddleware(ctx, next) {
+            var request = ctx.getReq();
+            if (ctx.xhr && ctx.xhr.request) {
+                return ctx.xhr.request(request)
                     .then(function (response) { return ctx.setRes(response); });
             }
-            return Promise.reject(createError('Network Error', ctx.request, null));
+            return Promise.reject(createError('context`xhr no found', 'CONTEXT_XHR_NOT_FOUND', request));
         });
     };
     /**
      * Create a new context object for each ajax request
-     * @returns {Context} return context, but add $data、request、response、parent attribute in new context
+     * @returns {Context} return context, but add $data、request、response attribute in new context
      */
     Context.prototype.newCtx = function () {
         var ctx = Object.create(this);
         ctx.$data = {};
         ctx.request = {};
-        ctx.response = {};
-        ctx.parent = this;
+        ctx.response = Context.newRes();
         return ctx;
     };
     /**
@@ -1316,7 +1376,7 @@ var context_Context = /** @class */ (function () {
     /**
      * Getting the request in current context
      * The request deep merged request of the parent objects
-     * @returns {Request | null}
+     * @returns {Request}
      */
     Context.prototype.getReq = function () {
         var requests = [];
@@ -1341,7 +1401,7 @@ var context_Context = /** @class */ (function () {
     };
     /**
      * Getting the response in current context
-     * @returns {Response | AnyPlainObj}
+     * @returns {Response}
      */
     Context.prototype.getRes = function () {
         return deepMerge({}, this.response);
@@ -1352,12 +1412,7 @@ var context_Context = /** @class */ (function () {
      * @returns {Context}
      */
     Context.prototype.setUrl = function (url) {
-        if (this.request) {
-            this.request.url = url;
-        }
-        else {
-            this.request = { url: url };
-        }
+        this.request.url = url;
         return this;
     };
     /**
@@ -1366,40 +1421,26 @@ var context_Context = /** @class */ (function () {
      * @returns {Context}
      */
     Context.prototype.setMethod = function (method) {
-        if (this.request) {
-            this.request.method = method;
-        }
-        else {
-            this.request = { method: method };
-        }
+        this.request.method = method;
         return this;
     };
     /**
      * Setting the data in current context`s request data
-     * @param {RequestBody} string, plain object, ArrayBuffer, ArrayBufferView, URLSearchParams, FormData, File, Blob
+     * @param {RequestData} plain object, string | Document | ArrayBuffer | ArrayBufferView |
+     *        URLSearchParams | FormData | File | Blob | ReadableStream<Uint8Array> | null | undefined
      * @returns {Context}
      */
     Context.prototype.setData = function (data) {
-        if (this.request) {
-            this.request.data = data;
-        }
-        else {
-            this.request = { data: data };
-        }
+        this.request.data = data;
         return this;
     };
     /**
      * Setting the params in current context`s request params
-     * @param {AnyPlainObj} plain object for params
+     * @param {RequestParam}  AnyPlainObj | URLSearchParams
      * @returns {Context}
      */
     Context.prototype.setParams = function (params) {
-        if (this.request) {
-            this.request.params = params;
-        }
-        else {
-            this.request = { params: params };
-        }
+        this.request.params = params;
         return this;
     };
     /**
@@ -1408,14 +1449,13 @@ var context_Context = /** @class */ (function () {
      * @returns {Context}
      */
     Context.prototype.setHeaders = function (headers) {
-        if (this.request) {
-            this.request.headers = merge(this.request.headers, headers);
-        }
-        else {
-            this.request = { headers: headers };
-        }
+        this.request.headers = merge(this.request.headers || {}, headers);
         return this;
     };
+    // The XHR is default for ajax request
+    Context.XHR = null;
+    // Event System
+    Context.Event = helpers_event;
     // Define default request data config
     Context.$Request = data_request;
     // Define default response data structure
@@ -1432,7 +1472,7 @@ var context_Context = /** @class */ (function () {
 var src_OiO = /** @class */ (function (_super) {
     __extends(OiO, _super);
     function OiO(request, data, extend) {
-        return _super.call(this, request || {}, data || {}, merge({ ajax: adapter_xhr }, extend || {})) || this;
+        return _super.call(this, request || {}, data || {}, merge({ xhr: xhr_xhr }, extend || {})) || this;
     }
     return OiO;
 }(context));

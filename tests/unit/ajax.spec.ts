@@ -1,14 +1,14 @@
 
 import { expect } from 'chai';
 import qs from 'qs';
-import XR from '@/adapter/xhr';
+import XR from '@/xhr/xhr';
 
 const ajax = XR;
 const url = 'https://1276840996828174.cn-shenzhen.fc.aliyuncs.com/2016-08-15/proxy/oio/restful/';
 // const url = 'http://localhost:8000/2016-08-15/proxy/oio/restful/';
 const params = { userId: 1, email: 'test@t.com' };
 const data = { user: 'test', name: '测试' };
-const timeout = 5000;
+const timeout = 20000;
 
 describe('adapter/xhr', () => {
 
@@ -148,6 +148,36 @@ describe('adapter/xhr', () => {
   it('测试options方法的配置params & data', async () => {
     const response = await ajax.options(url, { params, data });
     expect(response.data).to.have.equal(null);
+  }).timeout(timeout);
+
+  it('测试取消ajax', async () => {
+    let res1;
+    try {
+      res1 = await ajax.request({
+        url,
+        cancelToken: (cancel) => {
+          setTimeout(() => {
+            cancel();
+          }, 10)
+        }
+      });
+    } catch (e) {}
+    expect(res1).to.have.equal(undefined);
+
+    let res2, abort: any;
+    try {
+      res2 = await ajax.request({
+        url,
+        cancelToken: (cancel) => {
+          abort = cancel;
+        }
+      });
+      await new Promise((resolve) => setTimeout(() => {
+        abort && abort();
+        resolve();
+      }, 3000));
+    } catch (e) {}
+    expect(res2).not.to.have.equal(undefined);
   }).timeout(timeout);
 
   /*it('测试patch方法的配置params & data', async () => {

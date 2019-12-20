@@ -1,12 +1,12 @@
 
 import { expect } from 'chai';
 import OiO from '@/index';
-import Ajax from '@/adapter/xhr';
+import Ajax from '@/xhr/xhr';
 
 const url = 'https://1276840996828174.cn-shenzhen.fc.aliyuncs.com/2016-08-15/proxy/oio/restful/';
 const params = { userId: 1, email: 'test@t.com' };
 const data = { user: 'test', name: '测试' };
-const timeout = 20000;
+const timeout = 30000;
 
 describe('example', () => {
   const oio = new OiO();
@@ -44,8 +44,8 @@ describe('example', () => {
       headers: {'Content-Type': 'application/x-www-form-urlencoded'}
     }).run();
     expect(response.data).to.have.nested.property('body.param1', 'value1');
-    if (response.headers) {
-      expect(response.headers['content-type']).to.have.equal('application/x-www-form-urlencoded');
+    if (response.data.headers) {
+      expect(response.data.headers['content-type']).to.have.equal('application/x-www-form-urlencoded');
     }
   }).timeout(timeout);
 
@@ -72,22 +72,19 @@ describe('example', () => {
     oio.use(async function apiLock(ctx, next) {
       const { api } = ctx.getCtxData();
       if (!api) return await next();
-      if (api.lock) {
-        throw new Error('api lock');
-      } else {
-        api.lock = true;
-        api.status = 'sending';
-        try {
-          await next();
-        } catch (err) {
-          throw err;
-        }
+      api.lock = true;
+      api.status = 'sending';
+      try {
+        await next();
+      } catch (err) {
+        throw err;
+      } finally {
         api.lock = false;
         api.status = 'wait';
       }
     });
     oio.use(async function loading(ctx, next) {
-      const { loading } = ctx.parent.getCtxData();
+      const { loading } = Object.getPrototypeOf(ctx).getCtxData();
       try {
         loading.count++;
         await next();
@@ -116,7 +113,7 @@ describe('example', () => {
     // Add middleware ctx data
     ctx.setCtxData({ api });
 
-    let apiCount = 5;
+    let apiCount = 3;
     const apiPromises = [];
 
     while (apiCount--) {

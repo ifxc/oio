@@ -1,4 +1,4 @@
-import { AnyPlainObj } from '../declare/type';
+import { AnyPlainObj, ParamsSerializerCallback } from '../declare/types';
 /**
  * Build a URL by appending params to the end
  *
@@ -6,4 +6,4 @@ import { AnyPlainObj } from '../declare/type';
  * @param {object} [params] The params to be appended
  * @returns {string} The formatted url
  */
-export default function buildURL(url: string, params: object, paramsSerializer?: ((params: AnyPlainObj) => string) | null): string;
+export default function buildURL(url: string, params?: AnyPlainObj | URLSearchParams, paramsSerializer?: ParamsSerializerCallback): string;
