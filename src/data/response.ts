@@ -1,6 +1,6 @@
 import { Response } from '../declare/interface'
 
-const response: Response = {
+const response: Response<any> = {
   data: null,
   status: 0,
   statusText: '',

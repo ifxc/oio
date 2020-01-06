@@ -28,8 +28,8 @@ export default class Context {
   }
 
   // Used to isolate from default response
-  static newRes () : Response {
-    return <Response>deepMerge({}, Context.$Response)
+  static newRes () : Response<any> {
+    return <Response<any>>deepMerge({}, Context.$Response)
   }
 
   // Storage context data，This context`s data is for middleware use
@@ -39,7 +39,7 @@ export default class Context {
   protected request: RequestConfig
 
   // response data
-  protected response: Response
+  protected response: Response<any>
 
   // The extend mainly stores references to third-party libraries
   extend: AnyPlainObj = {}
@@ -104,7 +104,7 @@ export default class Context {
    * @param {FnNext<Context>}
    * @returns {Promise<Response>}
    */
-  run (next?: FnNext<Context>) : Promise<Response> {
+  run (next?: FnNext<Context>) : Promise<Response<any>> {
     const middleware = this.middleware.filter(fn => !this.assertIgnoreMiddleware(fn.name))
     const fn = compose([
       function getResponseMiddleware (ctx, next) {
@@ -116,7 +116,7 @@ export default class Context {
       const request = ctx.getReq()
       if (ctx.xhr && ctx.xhr.request) {
         return ctx.xhr.request(request)
-          .then((response: Response) => ctx.setRes(response))
+          .then((response: Response<any>) => ctx.setRes(response))
       }
       return Promise.reject(createError('context`xhr no found', 'CONTEXT_XHR_NOT_FOUND', request))
     })
@@ -185,8 +185,8 @@ export default class Context {
    * @param {Response|AnyPlainObj} response data
    * @returns {Context}
    */
-  setRes (response: Response | AnyPlainObj) : Context {
-    this.response = <Response>merge(this.response, response)
+  setRes (response: Response<any> | AnyPlainObj) : Context {
+    this.response = <Response<any>>merge(this.response, response)
     return this
   }
 
@@ -194,8 +194,8 @@ export default class Context {
    * Getting the response in current context
    * @returns {Response}
    */
-  getRes () : Response {
-    return <Response>deepMerge({}, this.response)
+  getRes () : Response<any> {
+    return <Response<any>>deepMerge({}, this.response)
   }
 
   /**

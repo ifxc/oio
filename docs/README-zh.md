@@ -10,7 +10,7 @@
 ## 特性
 * 兼容了axios的大部分方法和配置，但去掉了node.js请求模块
 * 中间件机制使业务处理更容易，比如转换请求和响应数据
-* 更小更灵活，min+gzip下只有4.6kb
+* 更小更灵活，min+gzip下只有5kb左右
 * Typescript和Promise的支持
 
 
@@ -123,13 +123,13 @@ export default class Context {
   protected static $Request: RequestCOnfig
 
   // Define default response data structure
-  protected static $Response: Response
+  protected static $Response: Response<any>
 
   // Used to isolate from default request
   static newReq () : Request
 
   // Used to isolate from default response
-  static newRes () : Response
+  static newRes () : Response<any>
 
   // Storage context data，This context`s data is for middleware use
   protected $data: CtxData
@@ -138,7 +138,7 @@ export default class Context {
   protected request: RequestConfig
 
   // response data
-  protected response: Response
+  protected response: Response<any>
 
   // The extend mainly stores references to third-party libraries
   extend: AnyPlainObj
@@ -167,7 +167,7 @@ export default class Context {
    * @param {Object} [response] The response.
    * @returns {Error} The created error.
    */
-  createApiError (message: string, code: string = '', request: Request, response?: Response) : ApiError
+  createApiError (message: string, code: string = '', request: Request, response?: Response<any>) : ApiError
   
   /**
    * Add ignore middleware name
@@ -190,9 +190,9 @@ export default class Context {
   /**
    * Run middleware
    * @param {FnNext<Context>}
-   * @returns {Promise<Response>}
+   * @returns {Promise<Response<any>>}
    */
-  run (next?: FnNext<any>) : Promise<Response>
+  run (next?: FnNext<any>) : Promise<Response<any>>
 
   /**
    * Create a new context object for each ajax request
@@ -230,16 +230,16 @@ export default class Context {
 
   /**
    * Setting the response in current context
-   * @param {Response|AnyPlainObj} response data
+   * @param {Response<any>|AnyPlainObj} response data
    * @returns {Context}
    */
-  setRes (response: Response | AnyPlainObj) : Context
+  setRes (response: Response<any> | AnyPlainObj) : Context
 
   /**
    * Getting the response in current context
-   * @returns {Response}
+   * @returns {Response<any>}
    */
-  getRes () : Response
+  getRes () : Response<any>
 
   /**
    * Setting the url in current context`s request url
@@ -358,9 +358,9 @@ XHR.patch(url[, data[, config]])
 
 ## Response Schema
 ```
-interface Response {
+interface Response<T> {
   // `data` is the response that was provided by the server
-  data: any,
+  data: T,
 
   // `status` is the HTTP status code from the server response
   status: number,

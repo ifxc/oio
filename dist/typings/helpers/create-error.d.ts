@@ -8,4 +8,4 @@ import { Request, Response, ApiError } from '../declare/interface';
  * @param {Object} [response] The response.
  * @returns {Error} The created error.
  */
-export default function createError(message: string, code: string | undefined, request: Request, response?: Response): ApiError;
+export default function createError(message: string, code: string | undefined, request: Request, response?: Response<any>): ApiError;

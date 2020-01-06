@@ -66,7 +66,7 @@ export interface RequestConfig {
   [prop: string]: any
 }
 
-export interface Request extends RequestConfig{
+export interface Request extends RequestConfig {
   url: string,
   method: RequestMethod,
   headers: {
@@ -77,9 +77,9 @@ export interface Request extends RequestConfig{
   data?: XhrSendBody
 }
 
-export interface Response {
+export interface Response<T> {
   // `data` is the response that was provided by the server
-  data: any,
+  data: T,
 
   // `status` is the HTTP status code from the server response
   status: number,
@@ -95,21 +95,21 @@ export interface Response {
 }
 
 export interface XHRRequest {
-  request (request: RequestConfig) : Promise<Response>,
-  request (url: string, request: RequestConfig) : Promise<Response>,
-  'delete' (url: string, config?: RequestConfig) : Promise<Response>,
-  'get' (url: string, config?: RequestConfig) : Promise<Response>,
-  head (url: string, config?: RequestConfig) : Promise<Response>,
-  options (url: string, config?: RequestConfig) : Promise<Response>,
-  post (url: string, data: any, config?: RequestConfig) : Promise<Response>,
-  put (url: string, data: any, config?: RequestConfig) : Promise<Response>,
-  patch (url: string, data: any, config?: RequestConfig) : Promise<Response>
+  request (request: RequestConfig) : Promise<Response<any>>,
+  request (url: string, request: RequestConfig) : Promise<Response<any>>,
+  'delete' (url: string, config?: RequestConfig) : Promise<Response<any>>,
+  'get' (url: string, config?: RequestConfig) : Promise<Response<any>>,
+  head (url: string, config?: RequestConfig) : Promise<Response<any>>,
+  options (url: string, config?: RequestConfig) : Promise<Response<any>>,
+  post (url: string, data: any, config?: RequestConfig) : Promise<Response<any>>,
+  put (url: string, data: any, config?: RequestConfig) : Promise<Response<any>>,
+  patch (url: string, data: any, config?: RequestConfig) : Promise<Response<any>>
 }
 
 export interface ApiError extends Error {
   code: string,
   request?: Request,
-  response?: Response,
+  response?: Response<any>,
   isApiError: boolean,
   toJSON?: Function
 }

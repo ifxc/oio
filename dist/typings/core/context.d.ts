@@ -6,12 +6,12 @@ export default class Context {
     static XHR: XHRRequest | null;
     static Event: typeof Event;
     protected static $Request: Request;
-    protected static $Response: Response;
+    protected static $Response: Response<any>;
     static newReq(): Request;
-    static newRes(): Response;
+    static newRes(): Response<any>;
     protected $data: CtxData;
     protected request: RequestConfig;
-    protected response: Response;
+    protected response: Response<any>;
     extend: AnyPlainObj;
     xhr: XHRRequest | null;
     protected middleware: FnNext<Context>[];
@@ -48,7 +48,7 @@ export default class Context {
      * @param {FnNext<Context>}
      * @returns {Promise<Response>}
      */
-    run(next?: FnNext<Context>): Promise<Response>;
+    run(next?: FnNext<Context>): Promise<Response<any>>;
     /**
      * Create a new context object for each ajax request
      * @returns {Context} return context, but add $data、request、response attribute in new context
@@ -83,12 +83,12 @@ export default class Context {
      * @param {Response|AnyPlainObj} response data
      * @returns {Context}
      */
-    setRes(response: Response | AnyPlainObj): Context;
+    setRes(response: Response<any> | AnyPlainObj): Context;
     /**
      * Getting the response in current context
      * @returns {Response}
      */
-    getRes(): Response;
+    getRes(): Response<any>;
     /**
      * Setting the url in current context`s request url
      * @param {String} request url

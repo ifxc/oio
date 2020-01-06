@@ -33,28 +33,28 @@ export interface Request extends RequestConfig {
     timeout: number;
     data?: XhrSendBody;
 }
-export interface Response {
-    data: any;
+export interface Response<T> {
+    data: T;
     status: number;
     statusText: string;
     headers: AnyPlainObj | null;
     request: Request | null;
 }
 export interface XHRRequest {
-    request(request: RequestConfig): Promise<Response>;
-    request(url: string, request: RequestConfig): Promise<Response>;
-    'delete'(url: string, config?: RequestConfig): Promise<Response>;
-    'get'(url: string, config?: RequestConfig): Promise<Response>;
-    head(url: string, config?: RequestConfig): Promise<Response>;
-    options(url: string, config?: RequestConfig): Promise<Response>;
-    post(url: string, data: any, config?: RequestConfig): Promise<Response>;
-    put(url: string, data: any, config?: RequestConfig): Promise<Response>;
-    patch(url: string, data: any, config?: RequestConfig): Promise<Response>;
+    request(request: RequestConfig): Promise<Response<any>>;
+    request(url: string, request: RequestConfig): Promise<Response<any>>;
+    'delete'(url: string, config?: RequestConfig): Promise<Response<any>>;
+    'get'(url: string, config?: RequestConfig): Promise<Response<any>>;
+    head(url: string, config?: RequestConfig): Promise<Response<any>>;
+    options(url: string, config?: RequestConfig): Promise<Response<any>>;
+    post(url: string, data: any, config?: RequestConfig): Promise<Response<any>>;
+    put(url: string, data: any, config?: RequestConfig): Promise<Response<any>>;
+    patch(url: string, data: any, config?: RequestConfig): Promise<Response<any>>;
 }
 export interface ApiError extends Error {
     code: string;
     request?: Request;
-    response?: Response;
+    response?: Response<any>;
     isApiError: boolean;
     toJSON?: Function;
 }

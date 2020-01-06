@@ -10,7 +10,7 @@ import parseHeaders from '../helpers/parse-headers'
 import isURLSameOrigin from '../helpers/is-url-same-origin'
 import cookies from '../helpers/cookies'
 
-export default function xhrAdapter (request: Request) : Promise<Response> {
+export default function xhrAdapter (request: Request) : Promise<Response<any>> {
   return new Promise(function dispatchXhrRequest (resolve, reject) {
     let requestData = request.data
     const requestHeaders = request.headers
@@ -51,7 +51,7 @@ export default function xhrAdapter (request: Request) : Promise<Response> {
       const responseHeaders: AnyPlainObj | null = 'getAllResponseHeaders' in xhr ? parseHeaders(xhr.getAllResponseHeaders()) : null
       const responseData: AnyPlainObj = !request.responseType || request.responseType === 'text' ? xhr.responseText : xhr.response
 
-      const response: Response = {
+      const response: Response<any> = {
         data: responseData,
         status: xhr.status,
         statusText: xhr.statusText,

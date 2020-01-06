@@ -12,7 +12,7 @@ import requestDefault from '../data/request'
  * create request method
  */
 const XHR: XHRRequest = <XHRRequest>{
-  request: function (requestConfig: RequestConfig) : Promise<Response> {
+  request: function (requestConfig: RequestConfig) : Promise<Response<any>> {
     if (isString(requestConfig)) {
       requestConfig = arguments[1] || {}
       requestConfig.url = arguments[0]
@@ -43,7 +43,7 @@ const XHR: XHRRequest = <XHRRequest>{
       request.data = JSON.stringify(request.data)
     }
 
-    return dispatchRequest(<Request>request).then((response: Response) => {
+    return dispatchRequest(<Request>request).then((response: Response<any>) => {
       // default parse json
       if (isString(response.data)) {
         try {
@@ -74,7 +74,7 @@ forEach([
   RequestMethodNoData.Head,
   RequestMethodNoData.Options
 ], function forEachMethodNoData (method: RequestMethodNoData) {
-  XHR[method] = function (url: string, config?: RequestConfig) : Promise<Response> {
+  XHR[method] = function (url: string, config?: RequestConfig) : Promise<Response<any>> {
     return this.request(merge(config || {}, {
       method: method,
       url: url
@@ -87,7 +87,7 @@ forEach([
   RequestMethodWithData.Put,
   RequestMethodWithData.Patch
 ], function forEachMethodWithData (method: RequestMethodWithData) {
-  XHR[method] = function (url: string, data: RequestData = {}, config?: RequestConfig) : Promise<Response> {
+  XHR[method] = function (url: string, data: RequestData = {}, config?: RequestConfig) : Promise<Response<any>> {
     return this.request(merge(config || {}, {
       method: method,
       url: url,

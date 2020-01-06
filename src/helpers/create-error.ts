@@ -11,7 +11,7 @@ import { AnyPlainObj } from '../declare/types'
  * @param {Object} [response] The response.
  * @returns {Error} The error.
  */
-function enhanceError (error: ApiError, code: string, request: Request, response?: Response) : ApiError {
+function enhanceError (error: ApiError, code: string, request: Request, response?: Response<any>) : ApiError {
   error.code = code
   error.request = request
   error.response = response
@@ -47,7 +47,7 @@ function enhanceError (error: ApiError, code: string, request: Request, response
  * @param {Object} [response] The response.
  * @returns {Error} The created error.
  */
-export default function createError (message: string, code: string = '', request: Request, response?: Response) : ApiError {
+export default function createError (message: string, code: string = '', request: Request, response?: Response<any>) : ApiError {
   const error: Error = new Error(message)
   return enhanceError(<ApiError>error, code, request, response)
 }
