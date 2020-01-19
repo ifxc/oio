@@ -3,7 +3,7 @@ export type AnyPlainObj = { [prop:string]: any }
 
 export type FnNext<T> = (ctx: T, next: () => Promise<any>) => Promise<any>
 
-export type CtxData = AnyPlainObj
+export type CtxData<T> = T | AnyPlainObj
 
 export type RequestMethodNoData = 'delete' | 'get' | 'head' | 'options' | 'DELETE' | 'GET' | 'HEAD' | 'OPTIONS'
 

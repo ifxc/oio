@@ -9,7 +9,7 @@ import compose from './compose'
 import Event from '../helpers/event'
 import createError from '../helpers/create-error'
 
-export default class Context {
+export default class Context<T> {
   // The XHR is default for ajax request
   static XHR: XHRRequest | null = null
 
@@ -33,7 +33,7 @@ export default class Context {
   }
 
   // Storage context data，This context`s data is for middleware use
-  protected $data: CtxData = {}
+  protected $data: CtxData<T> = {}
 
   // request config data
   protected request: RequestConfig
@@ -48,7 +48,7 @@ export default class Context {
   xhr: XHRRequest | null = null
 
   // Storage middleware function
-  protected middleware: FnNext<Context>[] = []
+  protected middleware: FnNext<Context<T>>[] = []
 
   // Ignore middleware name list
   protected ignoreMiddlewareFunctionNames: string[] = []
@@ -58,7 +58,7 @@ export default class Context {
    * @param {CtxData} Context data，This context`s data is for middleware use
    * @param extend The extend mainly stores references to third-party libraries
    */
-  constructor (request?: RequestConfig, data: CtxData = {}, extend?: { xhr?: XHRRequest } & AnyPlainObj) {
+  constructor (request?: RequestConfig, data: CtxData<T> = {}, extend?: { xhr?: XHRRequest } & AnyPlainObj) {
     this.$data = merge(this.$data, data)
     if (extend) {
       this.extend = extend
@@ -79,7 +79,7 @@ export default class Context {
    * Add ignore middleware name
    * @param fnNames
    */
-  setIgnoreMiddleware (fnNames: string[]) : Context {
+  setIgnoreMiddleware (fnNames: string[]) : Context<T> {
     this.ignoreMiddlewareFunctionNames = fnNames
     return this
   }
@@ -95,7 +95,7 @@ export default class Context {
    * Add a middleware
    * @param {FnNext<Context>}
    */
-  use (fn: FnNext<Context>) {
+  use (fn: FnNext<Context<T>>) {
     this.middleware.push(fn)
   }
 
@@ -104,7 +104,7 @@ export default class Context {
    * @param {FnNext<Context>}
    * @returns {Promise<Response>}
    */
-  run (next?: FnNext<Context>) : Promise<Response<any>> {
+  run (next?: FnNext<Context<T>>) : Promise<Response<any>> {
     const middleware = this.middleware.filter(fn => !this.assertIgnoreMiddleware(fn.name))
     const fn = compose([
       function getResponseMiddleware (ctx, next) {
@@ -126,7 +126,7 @@ export default class Context {
    * Create a new context object for each ajax request
    * @returns {Context} return context, but add $data、request、response attribute in new context
    */
-  newCtx () : Context {
+  newCtx () : Context<T> {
     const ctx = Object.create(this)
     ctx.$data = {}
     ctx.request = {}
@@ -140,7 +140,7 @@ export default class Context {
    * @param data
    * @returns {Context}
    */
-  setCtxData (data: CtxData) : Context {
+  setCtxData (data: CtxData<T>) : Context<T> {
     this.$data = merge(this.$data, data)
     return this
   }
@@ -149,7 +149,7 @@ export default class Context {
    * Get the context`s data in the current context
    * @returns {CtxData}
    */
-  getCtxData () : CtxData {
+  getCtxData () : CtxData<T> {
     return this.$data
   }
 
@@ -158,7 +158,7 @@ export default class Context {
    * @param {Request|AnyPlainObj} request config
    * @returns {Context}
    */
-  setReq (request: RequestConfig) : Context {
+  setReq (request: RequestConfig) : Context<T> {
     this.request = <RequestConfig>deepMerge(this.request || {}, request)
     return this
   }
@@ -170,7 +170,7 @@ export default class Context {
    */
   getReq () : Request {
     const requests: any[] = []
-    function findReq (instance: Context) {
+    function findReq (instance: Context<T>) {
       const obj = Object.getPrototypeOf(instance)
       if (!obj || !obj.request) return
       requests.push(obj.request)
@@ -185,7 +185,7 @@ export default class Context {
    * @param {Response|AnyPlainObj} response data
    * @returns {Context}
    */
-  setRes (response: Response<any> | AnyPlainObj) : Context {
+  setRes (response: Response<any> | AnyPlainObj) : Context<T> {
     this.response = <Response<any>>merge(this.response, response)
     return this
   }
@@ -203,7 +203,7 @@ export default class Context {
    * @param {String} request url
    * @returns {Context}
    */
-  setUrl (url: string) : Context {
+  setUrl (url: string) : Context<T> {
     this.request.url = url
     return this
   }
@@ -213,7 +213,7 @@ export default class Context {
    * @param {String} delete、get、head、options、post、put、patch
    * @returns {Context}
    */
-  setMethod (method: RequestMethod) : Context {
+  setMethod (method: RequestMethod) : Context<T> {
     this.request.method = method
     return this
   }
@@ -224,7 +224,7 @@ export default class Context {
    *        URLSearchParams | FormData | File | Blob | ReadableStream<Uint8Array> | null | undefined
    * @returns {Context}
    */
-  setData (data: RequestData) : Context {
+  setData (data: RequestData) : Context<T> {
     this.request.data = data
     return this
   }
@@ -234,7 +234,7 @@ export default class Context {
    * @param {RequestParam}  AnyPlainObj | URLSearchParams
    * @returns {Context}
    */
-  setParams (params: RequestParam) : Context {
+  setParams (params: RequestParam) : Context<T> {
     this.request.params = params
     return this
   }
@@ -244,7 +244,7 @@ export default class Context {
    * @param {AnyPlainObj} headers object
    * @returns {Context}
    */
-  setHeaders (headers: AnyPlainObj) : Context {
+  setHeaders (headers: AnyPlainObj) : Context<T> {
     this.request.headers = merge(this.request.headers || {}, headers)
     return this
   }
